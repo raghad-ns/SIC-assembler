@@ -37,51 +37,56 @@ def subHex (a, b):
    hex2 = int(b, 16)
    return (hex(hex1 - hex2) [2:].upper())
 
-source = open("source.asm", 'r')
-intermediate = open("intermediate.mdt", 'w')
-sourceCode = source.read()
-lines = sourceCode.split('\n')
-symbolTable = {}
-locationCounter = "0000"
-programLength = 0
-programName = ""
-startingAddress = ""
-if lines[0][11:21].strip() == "START": # handle the start of program label
-   startingAddress = lines[0][21:30].strip()
-   locationCounter = startingAddress
-   intermediate.write(locationCounter + "     "+ lines[0]+ '\n')
-for instruction in lines[1:] :
-   label = instruction[0:11].strip()
-   opcode = instruction[11:21].strip()
-   operand = instruction[21:30].strip()
-   if label.strip() == ".": # its a comment line
-      continue
-   if label.strip() != "": # if the line contains label
-      if label in symbolTable: # check if it is already defined
-         print("Duplicated Label Error")
+def pass1() :
+   source = open("source.asm", 'r')
+   intermediate = open("intermediate.mdt", 'w')
+   sourceCode = source.read()
+   lines = sourceCode.split('\n')
+   symbolTable = {}
+   locationCounter = "0000"
+   programLength = 0
+   programName = ""
+   startingAddress = ""
+   if lines[0][11:21].strip() == "START": # handle the start of program label
+      startingAddress = lines[0][21:30].strip()
+      locationCounter = startingAddress
+      intermediate.write(locationCounter + "     "+ lines[0]+ '\n')
+   for instruction in lines[1:] :
+      label = instruction[0:11].strip()
+      opcode = instruction[11:21].strip()
+      operand = instruction[21:30].strip()
+      if label.strip() == ".": # its a comment line
+         continue
+      if label.strip() != "": # if the line contains label
+         if label in symbolTable: # check if it is already defined
+            print("Duplicated Label Error")
+            break
+         else:
+            symbolTable[label] = locationCounter # insert into the symbol table
+      if opcode in opcodeTable: # valid opcode found
+         tempLocationCounter = sumHex(locationCounter, "3")
+       #   print("location counter: ", locationCounter)
+      elif opcode == "WORD": 
+         tempLocationCounter = sumHex(locationCounter, "3")
+      elif opcode == "RESW": 
+         tempLocationCounter = sumHex(locationCounter, str(hex(3 * int(operand))))
+      elif opcode == "BYTE": 
+         value = re.findall(r"'(.*?)'", operand)[0]
+         if operand[0] == 'C': 
+           tempLocationCounter = sumHex(locationCounter, str(len(value)))
+      elif opcode == "RESB": 
+         tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))))
+      elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
+         print("Invalid Opcode Error", opcode)
          break
-      else:
-         symbolTable[label] = locationCounter # insert into the symbol table
-   if opcode in opcodeTable: # valid opcode found
-      tempLocationCounter = sumHex(locationCounter, "3")
-    #   print("location counter: ", locationCounter)
-   elif opcode == "WORD": 
-      tempLocationCounter = sumHex(locationCounter, "3")
-   elif opcode == "RESW": 
-      tempLocationCounter = sumHex(locationCounter, str(hex(3 * int(operand))))
-   elif opcode == "BYTE": 
-      value = re.findall(r"'(.*?)'", operand)[0]
-      if operand[0] == 'C': 
-        print('value: ', value)
-        tempLocationCounter = sumHex(locationCounter, str(len(value)))
-   elif opcode == "RESB": 
-      tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))))
-   elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
-      print("Invalid Opcode Error", opcode)
-      break
-   intermediate.write(locationCounter + "     "+ instruction+ '\n')
-   locationCounter = tempLocationCounter
-   if opcode == "END": # end of program reached
-      programLength = subHex(locationCounter, startingAddress)
-print("Program Length: ", programLength)
-print("symbol table: ", symbolTable)
+      intermediate.write(locationCounter + "     "+ instruction+ '\n')
+      locationCounter = tempLocationCounter
+      if opcode == "END": # end of program reached
+         programLength = subHex(locationCounter, startingAddress)
+   print("Program Length: ", programLength)
+   print("symbol table: ", symbolTable)
+
+def pass2(): 
+   intermediate = open('intermediate.mdt', 'r')
+
+pass1()
