@@ -40,6 +40,7 @@ def subHex (a, b):
 def pass1() :
    source = open("source.asm", 'r')
    intermediate = open("intermediate.mdt", 'w')
+   errors = open('errors.tsx', "w")
    pass1Out = open("pass1-out", 'w')
    sourceCode = source.read()
    lines = sourceCode.split('\n')
@@ -62,6 +63,8 @@ def pass1() :
       if label.strip() != "": # if the line contains label
          if label in symbolTable: # check if it is already defined
             print("Duplicated Label Error")
+            errors.write("Error: Duplicated Label Error \n")
+            errors.write("\t"+ instruction)
             break
          else:
             symbolTable[label] = locationCounter # insert into the symbol table
@@ -83,7 +86,8 @@ def pass1() :
          elif opcode == "RESB": 
             tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))[2:]))
          elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
-            print("Invalid Opcode Error", opcode)
+            errors.write("Invalid Opcode Error", opcode)
+            errors.write("\t"+ instruction)
             break
       locationCounter = tempLocationCounter
       if opcode == "END": # end of program reached
