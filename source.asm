@@ -40,6 +40,6 @@ WLOOP      TD        OUTPUT
            WD        OUTPUT
            TIX       LENGTH
            JLT       WLOOP
-       	   RSUB
+           RSUB
 OUTPUT     BYTE      X'05'
            END       FIRST

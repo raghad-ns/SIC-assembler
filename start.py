@@ -40,6 +40,7 @@ def subHex (a, b):
 def pass1() :
    source = open("source.asm", 'r')
    intermediate = open("intermediate.mdt", 'w')
+   pass1Out = open("pass1-out", 'w')
    sourceCode = source.read()
    lines = sourceCode.split('\n')
    symbolTable = {}
@@ -50,11 +51,12 @@ def pass1() :
    if lines[0][11:21].strip() == "START": # handle the start of program label
       startingAddress = lines[0][21:30].strip()
       locationCounter = startingAddress
-      intermediate.write(locationCounter + "     "+ lines[0]+ '\n')
+      intermediate.write(locationCounter + "     "+ lines[0][:30]+ '\n')
+      programName = lines[0][21:30].strip()
    for instruction in lines[1:] :
-      label = instruction[0:11].strip()
+      label = instruction[0:11]
       opcode = instruction[11:21].strip()
-      operand = instruction[21:30].strip()
+      operand = instruction[21:30]
       if label.strip() == ".": # its a comment line
          continue
       if label.strip() != "": # if the line contains label
@@ -65,26 +67,44 @@ def pass1() :
             symbolTable[label] = locationCounter # insert into the symbol table
       if opcode in opcodeTable: # valid opcode found
          tempLocationCounter = sumHex(locationCounter, "3")
+         intermediate.write(locationCounter + "     "+ instruction[:30]+ '\n')
        #   print("location counter: ", locationCounter)
-      elif opcode == "WORD": 
-         tempLocationCounter = sumHex(locationCounter, "3")
-      elif opcode == "RESW": 
-         tempLocationCounter = sumHex(locationCounter, str(hex(3 * int(operand))))
-      elif opcode == "BYTE": 
-         value = re.findall(r"'(.*?)'", operand)[0]
-         if operand[0] == 'C': 
-           tempLocationCounter = sumHex(locationCounter, str(len(value)))
-      elif opcode == "RESB": 
-         tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))))
-      elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
-         print("Invalid Opcode Error", opcode)
-         break
-      intermediate.write(locationCounter + "     "+ instruction+ '\n')
+      else :
+         if opcode == "WORD": 
+            tempLocationCounter = sumHex(locationCounter, "3")
+         elif opcode == "RESW": 
+            tempLocationCounter = sumHex(locationCounter, str(hex(3 * int(operand))))
+         elif opcode == "BYTE": 
+            value = re.findall(r"'(.*?)'", operand)[0]
+            if operand[0] == 'C': 
+               tempLocationCounter = sumHex(locationCounter, str(len(value)))
+            elif operand[0] == 'X': 
+               tempLocationCounter = sumHex(locationCounter, str(int(len(value) / 2) +  int(len(value) % 2))) 
+         elif opcode == "RESB": 
+            tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))[2:]))
+         elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
+            print("Invalid Opcode Error", opcode)
+            break
       locationCounter = tempLocationCounter
       if opcode == "END": # end of program reached
          programLength = subHex(locationCounter, startingAddress)
    print("Program Length: ", programLength)
    print("symbol table: ", symbolTable)
+   pass1Out.writelines("PRGNAME: "+ programName+ '\n')
+   pass1Out.writelines("PRGLTH: "+ programLength+ '\n')
+   pass1Out.writelines("LOCCTR: "+ locationCounter+ '\n')
+   pass1Out.writelines(" \n")
+   pass1Out.writelines("SYBTAB: \n")
+   pass1Out.writelines("|------------|------------|\n")
+   # pass1Out.writelines("__________________________\n")
+   pass1Out.writelines("|   SYMBOL   |   ADDRESS  |\n")
+   # pass1Out.writelines("|____________|____________|\n")
+   pass1Out.writelines("|------------|------------|\n")
+   for key in sorted(symbolTable):
+      pass1Out.writelines("| "+ key+"| "+ symbolTable[key] + '       |\n')
+      pass1Out.writelines("|------------|------------|\n")
+      # pass1Out.writelines("|____________|____________|\n")
+   
 
 def pass2(): 
    intermediate = open('intermediate.mdt', 'r')
