@@ -13,6 +13,12 @@
 1021                JSUB      WRREC
 1024                LDL       RETADR
 1027                RSUB
+102A     EOF        BYTE      C'EOF'
+102D     THREE      WORD      3
+1030     ZERO       WORD      0
+1033     RETADR     RESW      1
+1036     LENGTH     RESW      1
+1039     BUFFER     RESB      4096
 2039     RDREC      LDX       ZERO
 203C                LDA       ZERO
 203F     RLOOP      TD        INPUT
@@ -25,6 +31,8 @@
 2054                JLT       RLOOP
 2057     EXIT       STX       LENGTH
 205A                RSUB
+205D     INPUT      BYTE      X'F1'
+205E     MAXLEN     WORD      4096
 2061     WRREC      LDX       ZERO
 2064     WLOOP      TD        OUTPUT
 2067                JEQ       WLOOP
@@ -33,3 +41,5 @@
 2070                TIX       LENGTH
 2073                JLT       WLOOP
 2076                RSUB
+2079     OUTPUT     BYTE      X'05'
+207A                END       FIRST
