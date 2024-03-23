@@ -22,7 +22,8 @@ import re
 opcodeTable = {
     'STL': '14', 'JSUB': '48', 'LDA': '00', 'COMP': '28', 'STCH': '54', 'LDCH': '50',
     "RSUB": "4C", "JEQ": "30", "J": "3C", "STA": "0C", "LDL": "08", "LDX": "04", "TD": "E0",
-    "RD": "D8", "TIX": "2C", "JLT": "38", "STX": "10", "WD": "DC",
+    "RD": "D8", "TIX": "2C", "JLT": "38", "STX": "10", "WD": "DC", "ADD": "18", "AND": "40",
+    "DIV": "28", "JGT": "34", "MUL": "20", "OR": "44", "STSW": "E8", "SUB": "1C"
 }
 directivesTable = ['BYTE', 'RESB', 'WORD', 'RESW', 'START', 'END']
 # print(opcodeTable["LDA"]) 
@@ -38,9 +39,9 @@ def subHex (a, b):
    return (hex(hex1 - hex2) [2:].upper())
 
 def pass1() :
-   source = open("source.asm", 'r')
+   source = open("source3.asm", 'r')
    intermediate = open("intermediate.mdt", 'w')
-   errors = open('errors.txt', "w")
+   errors = open('errors.txt', 'w')
    pass1Out = open("pass1-out", 'w')
    sourceCode = source.read()
    lines = sourceCode.split('\n')
@@ -54,7 +55,14 @@ def pass1() :
       startingAddress = lines[0][21:30].strip()
       locationCounter = startingAddress # set location counter to the address given in START directive
       intermediate.write(locationCounter + "     "+ lines[0][:30]+ '\n')
-      programName = lines[0][21:30].strip()
+      programName = lines[0][:11].strip()
+      if lines[0][:11].strip() != "": # if the line contains label
+         if lines[0][:11] in symbolTable: # check if it is already defined
+            print("Duplicated Label Error") # Set error flag
+            errors.write("Error: Duplicated Label Error \n")
+            errors.write("\t"+ instruction)
+         else:
+            symbolTable[lines[0][:11]] = startingAddress # insert into the symbol table
 
    #  Process each line of code
    for instruction in lines[1:] :
@@ -91,7 +99,7 @@ def pass1() :
          elif opcode == "RESB": 
             tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))[2:]))
          elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
-            errors.write("Invalid Opcode Error", opcode)
+            errors.write("Invalid Opcode Error: "+ opcode)
             errors.write("\t"+ instruction)
             break
       intermediate.write(locationCounter + "     "+ instruction[:30]+ '\n')
@@ -101,7 +109,7 @@ def pass1() :
    print("Program Length: ", programLength)
    print("symbol table: ", symbolTable)
    pass1Out.writelines("PRGNAME: "+ programName+ '\n')
-   pass1Out.writelines("PRGLTH: "+ programLength+ '\n')
+   pass1Out.writelines("PRGLTH: "+ str(programLength)+ '\n')
    pass1Out.writelines("LOCCTR: "+ locationCounter+ '\n')
    pass1Out.writelines(" \n")
    pass1Out.writelines("SYBTAB: \n")
