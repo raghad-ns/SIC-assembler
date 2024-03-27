@@ -149,6 +149,7 @@ def pass2():
       operand = instruction[30:40]
       locCtr = instruction[:6].strip()
       objectCode = ''
+      instruction += (' ' * (40 - len(instruction)))
       if len(instruction) and instruction[0] == ".": # its a comment line
          continue # skip
 
@@ -158,7 +159,7 @@ def pass2():
          objectProgram.write(endRecord+'\n')
          listingFile.write(instruction)
          continue
-
+      
       if opcode in opcodeTable: # valid opcode found
          if tRecordStart == '': 
             tRecordStart = '0' * (6 - len(locCtr)) + locCtr
@@ -181,6 +182,7 @@ def pass2():
             objectCode = opcodeTable[opcode] + "0000" # no operands so add zeros
          if (tRecordSize + 3 <= tRecordMaxSize): 
             tRecordSize += 3
+            instruction += objectCode
             tRecord += objectCode
          else: 
             objectProgram.write('T' + tRecordStart + '0' * (2 - len(hex(tRecordSize)[2:])) + hex(tRecordSize)[2:].upper() + tRecord + '\n')
@@ -192,8 +194,9 @@ def pass2():
          if opcode == "WORD":
             print('word: ', operand)
             tRecordSize += 3 
+            objectCode = '0' * (6 - len(hex(int(operand))[2:])) + hex(int(operand))[2:]
             tRecord += '0' * (6 - len(hex(int(operand))[2:])) + hex(int(operand))[2:]
-            continue
+            instruction += objectCode
          elif opcode == "BYTE": 
             value = re.findall(r"'(.*?)'", operand)[0]
             if operand[0] == 'C': 
@@ -205,7 +208,7 @@ def pass2():
                objectCode = value
                tRecordSize += int(len(value) / 2) +  int(len(value) % 2)
                tRecord += value
-            print("byte value: ", objectCode)
+            instruction += objectCode
          elif opcode == "RESW" or opcode == "RESB": # write text record in the object file
             if (tRecord): objectProgram.write('T' + tRecordStart + '0' * (2 - len(hex(tRecordSize)[2:])) + hex(tRecordSize)[2:].upper() + tRecord + '\n')
             tRecord = ''
@@ -215,6 +218,7 @@ def pass2():
             errors.write("Invalid Opcode Error: "+ opcode)
             errors.write("\t"+ instruction)
             break
+      listingFile.write(instruction + '\n')
    
 
 
