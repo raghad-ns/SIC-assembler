@@ -7,6 +7,7 @@ CLOOP      JSUB      RDREC             READ INPUT RECORD
            JSUB      WRREC             WRITE OUTPUT RECORD
            J         CLOOP             LOOP
 ENDFIL     LDA       EOF               INSERT END OF FILE MARKER
+. This is a comment line, should be ignored
            STA       BUFFER
            LDA       THREE             SET LENGTH = 3
            STA       LENGTH
