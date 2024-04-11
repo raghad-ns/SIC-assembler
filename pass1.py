@@ -1,24 +1,4 @@
 import re
-# opcodeTable={
-#    'STL':'14',
-#    'JSUB':'48',
-#    'LDA':'00',
-#    'COMP':'28',
-#    'STCH':'54',
-#    'LDCH':'50',
-#    "RSUB":"4C",
-#    "JEQ":"30",
-#    "J":"3C",
-#    "STA":"0C",
-#    "LDL":"08",
-#    "LDX":"04",
-#    "TD":"E0",
-#    "RD":"D8",
-#    "TIX":"2C",
-#    "JLT":"38",
-#    "STX":"10",
-#    "WD":"DC",
-#    } 
 opcodeTable = {
     'STL': '14', 'JSUB': '48', 'LDA': '00', 'COMP': '28', 'STCH': '54', 'LDCH': '50',
     "RSUB": "4C", "JEQ": "30", "J": "3C", "STA": "0C", "LDL": "08", "LDX": "04", "TD": "E0",
@@ -47,7 +27,7 @@ def pass1() :
    global programName, programLength, startingAddress, symbolTable
    source = open("source3.asm", 'r')
    intermediate = open("intermediate.mdt", 'w')
-   pass1Out = open("pass1-out", 'w')
+   pass1Out = open("pass1-out.txt", 'w')
    sourceCode = source.read()
    lines = sourceCode.split('\n')
    locationCounter = "0000" # Initialize location counter to 0
@@ -59,7 +39,7 @@ def pass1() :
       programName = lines[0][:11].strip()
       if lines[0][:11].strip() != "": # if the line contains label
          if lines[0][:11].strip() in symbolTable: # check if it is already defined
-            print("Duplicated Label Error") # Set error flag
+            print("Duplicated Label Error: ", lines[0][:11].strip()) # Set error flag
             errors.write("Error: Duplicated Label Error \n")
             errors.write("\t"+ instruction)
          else:
@@ -85,7 +65,6 @@ def pass1() :
 
       if opcode in opcodeTable: # valid opcode found
          tempLocationCounter = sumHex(locationCounter, "3") # Updata location  counter by adding 3 (size of current instruction)
-       #   print("location counter: ", locationCounter)
       else :
          if opcode == "WORD": 
             tempLocationCounter = sumHex(locationCounter, "3")
@@ -116,14 +95,11 @@ def pass1() :
    pass1Out.writelines(" \n")
    pass1Out.writelines("SYBTAB: \n")
    pass1Out.writelines("|------------|------------|\n")
-   # pass1Out.writelines("__________________________\n")
    pass1Out.writelines("|   SYMBOL   |   ADDRESS  |\n")
-   # pass1Out.writelines("|____________|____________|\n")
    pass1Out.writelines("|------------|------------|\n")
    for key in sorted(symbolTable):
       pass1Out.writelines("| " + key + ' ' * (11 - len(key)) +"| "+ symbolTable[key] + '       |\n')
       pass1Out.writelines("|------------|------------|\n")
-      # pass1Out.writelines("|____________|____________|\n")
    
 
 def pass2(): 
@@ -172,9 +148,9 @@ def pass2():
 
             if operand.strip() in symbolTable: # check if operand existed in the symbol table
                targetAddress = '0' * (4 - len(symbolTable[operand.strip()])) + symbolTable[operand.strip()]  # get address from symbol table
-               objectCode = opcodeTable[opcode] + (targetAddress if indexed == False else sumHex(targetAddress, '1000'))
+               objectCode = opcodeTable[opcode] + (targetAddress if indexed == False else sumHex(targetAddress, '8000'))
             else:
-               print("Undefined Label Error, in pass2") # Set error flag
+               print("Undefined Label Error, in pass2: "+ operand.strip()) # Set error flag
                errors.write("Error: Undefined Label Error \n")
                errors.write("\t"+ instruction)
                break
@@ -182,17 +158,15 @@ def pass2():
             objectCode = opcodeTable[opcode] + "0000" # no operands so add zeros
          if (tRecordSize + 3 <= tRecordMaxSize): 
             tRecordSize += 3
-            instruction += objectCode
             tRecord += objectCode
          else: 
             objectProgram.write('T' + tRecordStart + '0' * (2 - len(hex(tRecordSize)[2:])) + hex(tRecordSize)[2:].upper() + tRecord + '\n')
             tRecordStart = '0' * (6 - len(locCtr)) + locCtr
             tRecord = objectCode
             tRecordSize = 3
-            print('T record length in hex: ', hex(tRecordSize))
+         instruction += objectCode
       else :
          if opcode == "WORD":
-            print('word: ', operand)
             tRecordSize += 3 
             objectCode = '0' * (6 - len(hex(int(operand))[2:])) + hex(int(operand))[2:]
             tRecord += '0' * (6 - len(hex(int(operand))[2:])) + hex(int(operand))[2:]
@@ -214,7 +188,7 @@ def pass2():
             tRecord = ''
             tRecordStart = ''
             tRecordSize = 0
-         elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
+         elif len(opcode.strip()) and opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
             errors.write("Invalid Opcode Error: "+ opcode)
             errors.write("\t"+ instruction)
             break
@@ -223,10 +197,9 @@ def pass2():
 
 
 
+print("\nPass 1 in progress...")
 pass1()
 print("\nPass 1 completed successfully.")
-# print("\nprogram name: "+ programName)
-# print("\nprogram length: "+ str(programLength))
-# print("\nstarting address: "+ startingAddress)
-print("Now processing Pass 2...")
+print("Pass 2 in progress...")
 pass2()
+print("\nPass 2 completed successfully.")
