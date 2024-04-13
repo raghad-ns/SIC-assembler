@@ -2,22 +2,22 @@ COPY       START     1000              COPY FILE FROM INPUT TO OUTPUT
 FIRST      STL       RETADR            SAVE RETURN ADDRESS
 CLOOP      JSUB      RDREC             READ INPUT RECORD
            LDA       LENGTH            TEST FOR EOF (LENGTH = 0)
-           COMP      ZERO
+           COMP      ZERO                
            JEQ       ENDFIL            EXIT IF EOF FOUND
            JSUB      WRREC             WRITE OUTPUT RECORD
            J         CLOOP             LOOP
 ENDFIL     LDA       EOF               INSERT END OF FILE MARKER
 . This is a comment line, should be ignored
-           STA       BUFFER
+           STA       BUFFER             
            LDA       THREE             SET LENGTH = 3
-           STA       LENGTH
+           STA       LENGTH                   
            JSUB      WRREC             WRITE EOF
            LDL       RETADR            GET RETURN ADDRESS
            RSUB                        RETURN TO CALLER
-EOF        BYTE      C'EOF' 
-THREE      WORD      3
-ZERO       WORD      0
-RETADR     RESW      1
+EOF        BYTE      C'EOF'              
+THREE      WORD      3                    
+ZERO       WORD      0                      
+RETADR     RESW      1                    
 LENGTH     RESW      1                 LENGTH OF RECORD
 BUFFER     RESB      4096              4096-BYTE BUFFER AREA
 RDREC      LDX       ZERO              CLEAR LOOP COUNTER
@@ -33,7 +33,7 @@ RLOOP      TD        INPUT             TEST INPUT DEVICE
 EXIT       STX       LENGTH            SAVE RECORD LENGTH
            RSUB                        RETURN TO CALLER
 INPUT      BYTE      X'F1'             CODE FOR INPUT DEVICE
-MAXLEN     WORD      4096
+MAXLEN     WORD      4096                   
 WRREC      LDX       ZERO              CLEAR LOOP COUNTER
 WLOOP      TD        OUTPUT            TEST OUTPUT DEVICE
            JEQ       WLOOP             LOOP UNTIL READY
@@ -43,4 +43,4 @@ WLOOP      TD        OUTPUT            TEST OUTPUT DEVICE
            JLT       WLOOP             HAVE BEEN WRITTEN
            RSUB                        RETURN TO CALLER
 OUTPUT     BYTE      X'05'             CODE FOR OUTPUT DEVICE
-           END       FIRST
+           END       FIRST               

@@ -32,14 +32,14 @@ def pass1() :
    lines = sourceCode.split('\n')
    locationCounter = "0000" # Initialize location counter to 0
 
-   if lines[0][11:21].strip() == "START": # handle the start of program label
-      startingAddress = lines[0][21:30].strip()
+   if lines[0][11:20].strip() == "START": # handle the start of program label
+      startingAddress = lines[0][21:39].strip()
       locationCounter = startingAddress # set location counter to the address given in START directive
       intermediate.write(locationCounter + "     "+ lines[0][:30]+ '\n')
       programName = lines[0][:11].strip()
-      if lines[0][:11].strip() != "": # if the line contains label
-         if lines[0][:11].strip() in symbolTable: # check if it is already defined
-            print("Duplicated Label Error: ", lines[0][:11].strip()) # Set error flag
+      if lines[0][:10].strip() != "": # if the line contains label
+         if lines[0][:10].strip() in symbolTable: # check if it is already defined
+            print("Duplicated Label Error: ", lines[0][:10].strip()) # Set error flag
             errors.write("Error: Duplicated Label Error \n")
             errors.write("\t"+ instruction)
          else:
@@ -47,9 +47,10 @@ def pass1() :
 
    #  Process each line of code
    for instruction in lines[1:] :
-      label = instruction[0:11]
-      opcode = instruction[11:21].strip()
-      operand = instruction[21:30]
+      label = instruction[0:10]
+      opcode = instruction[11:20].strip()
+      operand = instruction[21:39]
+      instruction = instruction[:39]
 
       if instruction[0] == ".": # its a comment line
          continue # skip
@@ -64,6 +65,9 @@ def pass1() :
             symbolTable[label.strip()] = locationCounter # insert into the symbol table
 
       if opcode in opcodeTable: # valid opcode found
+         # For optimization purposes, store the machine code for the menimonic in the intermediate file, in order not to access the opcode table another time during pass2
+         instruction = instruction[:39] + opcodeTable[opcode] 
+         # intermediate.write(locationCounter + "     "+ instruction[:30] + opcodeTable[opcode] + '\n')
          tempLocationCounter = sumHex(locationCounter, "3") # Updata location  counter by adding 3 (size of current instruction)
       else :
          if opcode == "WORD": 
@@ -82,7 +86,7 @@ def pass1() :
             errors.write("Invalid Opcode Error: "+ opcode)
             errors.write("\t"+ instruction)
             break
-      intermediate.write(locationCounter + "     "+ instruction[:30]+ '\n')
+      intermediate.write(locationCounter + "     "+ instruction + '\n')
       locationCounter = tempLocationCounter
       if opcode == "END": # end of program reached
          programLength = subHex(locationCounter, startingAddress)
@@ -110,7 +114,7 @@ def pass2():
    sourceCode = intermediate.read()
    lines = sourceCode.split('\n')
    Hrecord = ' ' * 19 
-   if lines[0][20:30].strip() == "START": # handle the start of program label
+   if lines[0][20:29].strip() == "START": # handle the start of program label
       listingFile.write(lines[0] + '\n')
       Hrecord = 'H' + programName + ' ' * (6 - len(programName)) +  '0' * (6 - len(startingAddress)) + startingAddress + '0' * (6 - len(str(programLength))) + str(programLength)
       objectProgram.write(Hrecord + '\n')
@@ -121,9 +125,9 @@ def pass2():
    tRecordMaxSize = 30
 
    for instruction in lines[1:] :
-      opcode = instruction[20:30].strip()
-      operand = instruction[30:40]
-      locCtr = instruction[:6].strip()
+      opcode = instruction[20:29].strip()
+      operand = instruction[30:48]
+      locCtr = instruction[:9].strip()
       objectCode = ''
       instruction += (' ' * (40 - len(instruction)))
       if len(instruction) and instruction[0] == ".": # its a comment line
@@ -140,7 +144,7 @@ def pass2():
          if tRecordStart == '': 
             tRecordStart = '0' * (6 - len(locCtr)) + locCtr
          if (len(operand.strip( ) ) > 0): # there is an operand
-            objectCode = opcodeTable[opcode]
+            objectCode = instruction[48:50]
             indexed = False
             if len(operand.strip()) > 2 and operand.strip()[-2:] == ",X" :
                operand = operand.strip()[:-2]
@@ -148,21 +152,21 @@ def pass2():
 
             if operand.strip() in symbolTable: # check if operand existed in the symbol table
                targetAddress = '0' * (4 - len(symbolTable[operand.strip()])) + symbolTable[operand.strip()]  # get address from symbol table
-               objectCode = opcodeTable[opcode] + (targetAddress if indexed == False else sumHex(targetAddress, '8000'))
+               objectCode = (targetAddress if indexed == False else sumHex(targetAddress, '8000'))
             else:
                print("Undefined Label Error, in pass2: "+ operand.strip()) # Set error flag
                errors.write("Error: Undefined Label Error \n")
                errors.write("\t"+ instruction)
                break
          else: 
-            objectCode = opcodeTable[opcode] + "0000" # no operands so add zeros
+            objectCode = "0000" # no operands so add zeros
          if (tRecordSize + 3 <= tRecordMaxSize): 
             tRecordSize += 3
-            tRecord += objectCode
+            tRecord += (instruction[48:50]+ objectCode)
          else: 
             objectProgram.write('T' + tRecordStart + '0' * (2 - len(hex(tRecordSize)[2:])) + hex(tRecordSize)[2:].upper() + tRecord + '\n')
             tRecordStart = '0' * (6 - len(locCtr)) + locCtr
-            tRecord = objectCode
+            tRecord = instruction[48: 50] + objectCode
             tRecordSize = 3
          instruction += objectCode
       else :
