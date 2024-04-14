@@ -25,7 +25,7 @@ errors = open('errors.txt', 'w')
 
 def pass1() :
    global programName, programLength, startingAddress, symbolTable
-   source = open("source3.asm", 'r')
+   source = open("source.asm", 'r') # Edit the source file here
    intermediate = open("intermediate.mdt", 'w')
    pass1Out = open("pass1-out.txt", 'w')
    sourceCode = source.read()
@@ -57,18 +57,18 @@ def pass1() :
 
       if label.strip() != "": # if the line contains label
          if label.strip() in symbolTable: # check if it is already defined
-            print("Duplicated Label Error") # Set error flag
-            errors.write("Error: Duplicated Label Error \n")
+            print("Duplicated Label Error in pass1") # Set error flag
+            errors.write("Error: Duplicated Label Error, during pass1: " + operand.strip() + "\n")
             errors.write("\t"+ instruction)
             break
          else:
             symbolTable[label.strip()] = locationCounter # insert into the symbol table
 
+      instruction = instruction[:39] + (39 - len(instruction[:39])) * ' ' 
       if opcode in opcodeTable: # valid opcode found
          # For optimization purposes, store the machine code for the menimonic in the intermediate file, in order not to access the opcode table another time during pass2
-         instruction = instruction[:39] + opcodeTable[opcode] 
-         # intermediate.write(locationCounter + "     "+ instruction[:30] + opcodeTable[opcode] + '\n')
-         tempLocationCounter = sumHex(locationCounter, "3") # Updata location  counter by adding 3 (size of current instruction)
+         instruction = instruction + opcodeTable[opcode] 
+         tempLocationCounter = sumHex(locationCounter, "3") # Updata location counter by adding 3 (size of current instruction)
       else :
          if opcode == "WORD": 
             tempLocationCounter = sumHex(locationCounter, "3")
@@ -83,7 +83,7 @@ def pass1() :
          elif opcode == "RESB": 
             tempLocationCounter = sumHex(locationCounter, str(hex(int(operand))[2:]))
          elif opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
-            errors.write("Invalid Opcode Error: "+ opcode)
+            errors.write("Invalid Opcode Error, during pass1: "+ opcode + '\n')
             errors.write("\t"+ instruction)
             break
       intermediate.write(locationCounter + "     "+ instruction + '\n')
@@ -155,7 +155,7 @@ def pass2():
                objectCode = (targetAddress if indexed == False else sumHex(targetAddress, '8000'))
             else:
                print("Undefined Label Error, in pass2: "+ operand.strip()) # Set error flag
-               errors.write("Error: Undefined Label Error \n")
+               errors.write("Error: Undefined Label Error, during pass2: "+ operand.strip()+"\n")
                errors.write("\t"+ instruction)
                break
          else: 
@@ -193,7 +193,7 @@ def pass2():
             tRecordStart = ''
             tRecordSize = 0
          elif len(opcode.strip()) and opcode not in opcodeTable and opcode not in directivesTable: # invalid opcode
-            errors.write("Invalid Opcode Error: "+ opcode)
+            errors.write("Invalid Opcode Error, during pass2: "+ opcode + '\n')
             errors.write("\t"+ instruction)
             break
       listingFile.write(instruction + '\n')
